@@ -2,7 +2,7 @@
 #ifndef HMFP_HELPER_H
 #define HMFP_HELPER_H
 
-#include "ns3/hmfp.h"
+#include "ns3/hmfp-routing-protocol.h"
 
 namespace ns3 {
 

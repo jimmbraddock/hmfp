@@ -4,6 +4,7 @@
 
 #include "ns3/ipv4-routing-protocol.h"
 #include "ns3/timer.h"
+#include "hmfp-rtable.h"
 
 namespace ns3 {
 namespace hmfp {
@@ -67,7 +68,8 @@ private:
 
 
 
-
+  /// Routing table
+  RoutingTable m_routingTable;
   Time m_param;
 
 };

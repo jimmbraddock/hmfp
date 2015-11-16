@@ -9,7 +9,8 @@
 def build(bld):
     module = bld.create_ns3_module('hmfp', ['core'])
     module.source = [
-        'model/hmfp.cc',
+        'model/hmfp-routing-protocol.cc',
+        'model/hmfp-rtable.cc',
         'helper/hmfp-helper.cc',
         ]
 
@@ -21,7 +22,8 @@ def build(bld):
     headers = bld(features='ns3header')
     headers.module = 'hmfp'
     headers.source = [
-        'model/hmfp.h',
+        'model/hmfp-routing-protocol.h',
+        'model/hmfp-rtable.h',
         'helper/hmfp-helper.h',
         ]
 

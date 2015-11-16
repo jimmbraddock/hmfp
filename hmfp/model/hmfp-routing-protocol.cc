@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 
-#include "hmfp.h"
+#include "hmfp-routing-protocol.h"
 #include "ns3/log.h"
 
 namespace ns3 {
@@ -10,7 +10,7 @@ NS_LOG_COMPONENT_DEFINE ("HmfpRoutingProtocol");
 namespace hmfp {
 
 RoutingProtocol::RoutingProtocol(): m_param(Seconds (3)) {
-
+    m_routingTable = RoutingTable();
 }
 
 /*
