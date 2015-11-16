@@ -9,7 +9,23 @@ NS_LOG_COMPONENT_DEFINE ("HmfpRoutingProtocol");
 
 namespace hmfp {
 
-/*  TypeId
+RoutingProtocol::RoutingProtocol(): m_param(Seconds (3)) {
+
+}
+
+/*
+
+Ptr<Ipv4Route> RoutingProtocol::RouteOutput(Ptr<Packet>, const Ipv4Header &, Ptr<NetDevice>, Socket::SocketErrno)
+{
+
+}
+
+bool RoutingProtocol::RouteInput(Ptr<const Packet>, const Ipv4Header &, Ptr<const NetDevice>, UnicastForwardCallback, MulticastForwardCallback, LocalDeliverCallback, ErrorCallback)
+{
+
+}
+
+  TypeId
   RoutingProtocol::GetTypeId (void)
   {
     static TypeId tid = TypeId ("ns3::hmfp::RoutingProtocol")
