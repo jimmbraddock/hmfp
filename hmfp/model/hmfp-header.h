@@ -22,8 +22,6 @@ enum MessageType {
 //       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //       |     Type      |     Reserved  |      Rtable Size              |
 //       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//       |                    Originator  Address                        |
-//       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //       |                    Destination Address                        |
 //       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //       |     Hop Count |   Reserved    |     Additional Info           |
@@ -55,7 +53,6 @@ private:
     std::vector<RoutingInf> m_rtable;
 
     MessageType m_messageType;
-    Ipv4Address m_originatorAddress;
     uint16_t m_rtableSize;
 };
 
