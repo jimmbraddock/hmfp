@@ -14,6 +14,7 @@ enum MessageType {
     REQUEST_MESSAGE = 2,
     REPLY_MESSAGE = 3,
     DISCONNECT_MESSAGE = 4,
+    NOTIFY_MESSAGE = 5
 };
 
 //    Заголовок HELLO сообщения
@@ -73,8 +74,9 @@ class InfoHeader : public Header
 {
 
 public:
-    InfoHeader();
-    virtual ~InfoHeader();
+//    InfoHeader();
+    InfoHeader(MessageType type = REQUEST_MESSAGE);
+    virtual ~InfoHeader() {}
 
     static TypeId GetTypeId (void);
     virtual TypeId GetInstanceTypeId (void) const;
@@ -105,8 +107,8 @@ class NotifyHeader : public Header
 {
 
 public:
-    NotifyHeader();
-    virtual ~NotifyHeader();
+    NotifyHeader(Ipv4Address address = Ipv4Address ());
+    virtual ~NotifyHeader() {}
 
     static TypeId GetTypeId (void);
     virtual TypeId GetInstanceTypeId (void) const;
@@ -120,7 +122,7 @@ private:
   MessageType m_messageType;
   uint8_t m_reserved;
   uint16_t m_addInfo;
-  uint32_t m_disconnectAddress;
+  Ipv4Address m_disconnectAddress;
 };
 
 }
