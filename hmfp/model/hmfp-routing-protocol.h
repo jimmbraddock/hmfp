@@ -14,30 +14,26 @@ public:
   static TypeId GetTypeId (void);
 
   RoutingProtocol ();
-//protected:
-//  virtual void DoInitialize (void) {};
+  void SetSnrBottomBound(double value) { this->m_snrBottomBound = value; }
+  double GetSnrBottomBound() const { return m_snrBottomBound; }
+  void DoDispose ();
+protected:
+  virtual void DoInitialize (void);
 private:
-  virtual ~RoutingProtocol () {};
+  virtual ~RoutingProtocol ();
   // From Ipv4RoutingProtocol
-  virtual Ptr<Ipv4Route> RouteOutput (Ptr<Packet>,
-                                      const Ipv4Header &,
-                                      Ptr<NetDevice>,
-                                      Socket::SocketErrno) {return NULL;}
+  Ptr<Ipv4Route> RouteOutput (Ptr<Packet> p, const Ipv4Header &header, Ptr<NetDevice> oif, Socket::SocketErrno &sockerr);
 
-  virtual bool RouteInput (Ptr<const Packet> ,
-                           const Ipv4Header &,
-                           Ptr<const NetDevice> ,
-                           UnicastForwardCallback ,
-                           MulticastForwardCallback ,
-                           LocalDeliverCallback,
-                           ErrorCallback) {return false;}
+  bool RouteInput (Ptr<const Packet> p, const Ipv4Header &header, Ptr<const NetDevice> idev,
+                   UnicastForwardCallback ucb, MulticastForwardCallback mcb,
+                   LocalDeliverCallback lcb, ErrorCallback ecb);
 
-  virtual void NotifyInterfaceUp (uint32_t interface) {}
-  virtual void NotifyInterfaceDown (uint32_t interface) {}
-  virtual void NotifyAddAddress (uint32_t interface, Ipv4InterfaceAddress address) {}
-  virtual void NotifyRemoveAddress (uint32_t interface, Ipv4InterfaceAddress address) {}
-  virtual void SetIpv4 (Ptr<Ipv4> ipv4) {}
-  virtual void PrintRoutingTable (Ptr<OutputStreamWrapper> stream) const {}
+  virtual void NotifyInterfaceUp (uint32_t interface);
+  virtual void NotifyInterfaceDown (uint32_t interface);
+  virtual void NotifyAddAddress (uint32_t interface, Ipv4InterfaceAddress address);
+  virtual void NotifyRemoveAddress (uint32_t interface, Ipv4InterfaceAddress address);
+  virtual void SetIpv4 (Ptr<Ipv4> ipv4);
+  virtual void PrintRoutingTable (Ptr<OutputStreamWrapper> stream) const;
 
   // Запук работы протокола
   void Start();
@@ -69,9 +65,8 @@ private:
 
 
   /// Routing table
-  RoutingTable m_routingTable;
-  Time m_param;
-
+  RoutingTable *m_routingTable;
+  double m_snrBottomBound;
 };
 
 }
