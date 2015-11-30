@@ -26,7 +26,7 @@ public:
   RoutingTableEntry (Ptr<NetDevice> dev = 0,Ipv4Address dst = Ipv4Address (),
                      Ipv4InterfaceAddress iface = Ipv4InterfaceAddress (), uint16_t  hops = 0,
                      Ipv4Address nextHop = Ipv4Address ());
-  RoutingTableEntry () {}
+
 
   ~RoutingTableEntry () {}
 

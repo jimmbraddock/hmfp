@@ -62,10 +62,13 @@ private:
   // Отправка уведомления о скором разрыве соединения
   void SendDisconnectNotification();
 
+  bool IsMyOwnAddress (Ipv4Address src);
 
+  Ptr<Ipv4> m_ipv4;
+  std::map< Ptr<Socket>, Ipv4InterfaceAddress > m_socketAddresses;
 
   /// Routing table
-  RoutingTable *m_routingTable;
+  RoutingTable m_routingTable;
   double m_snrBottomBound;
 };
 
