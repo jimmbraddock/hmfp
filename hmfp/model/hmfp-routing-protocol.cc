@@ -11,7 +11,7 @@ NS_LOG_COMPONENT_DEFINE ("HmfpRoutingProtocol");
 
 namespace hmfp {
 
-RoutingProtocol::RoutingProtocol(): m_routingTable() {
+RoutingProtocol::RoutingProtocol(): m_ipv4 (0), m_htimer (Timer::CANCEL_ON_DESTROY), m_routingTable() {
 }
 
 RoutingProtocol::~RoutingProtocol() {
@@ -106,11 +106,28 @@ RoutingProtocol::IsMyOwnAddress (Ipv4Address src)
 }
 
 void RoutingProtocol::DoDispose() {
+    m_ipv4 = 0;
 
+    for (std::map< Ptr<Socket>, Ipv4InterfaceAddress >::iterator iter = m_socketAddresses.begin ();
+         iter != m_socketAddresses.end (); iter++)
+      {
+        iter->first->Close ();
+      }
+    m_socketAddresses.clear ();
+
+    Ipv4RoutingProtocol::DoDispose ();
 }
 
 void RoutingProtocol::DoInitialize() {
+    NS_LOG_FUNCTION (this);
+    NS_LOG_DEBUG ("OLSR on node " << m_ipv4->GetObject<Node> ()->GetId () << " started");
+    HelloTimerExpire();
+    Ipv4RoutingProtocol::DoInitialize ();
+}
 
+void RoutingProtocol::HelloTimerExpire() {
+    SendHello ();
+    m_htimer.Schedule (m_helloInterval);
 }
 
 TypeId
@@ -120,6 +137,10 @@ RoutingProtocol::GetTypeId (void)
       .SetParent<Ipv4RoutingProtocol> ()
       .SetGroupName ("Hmfp")
       .AddConstructor<RoutingProtocol> ()
+      .AddAttribute ("HelloInterval", "HELLO messages emission interval.",
+                     TimeValue (Seconds (2)),
+                     MakeTimeAccessor (&RoutingProtocol::m_helloInterval),
+                     MakeTimeChecker ())
       .AddAttribute("SnrBottomBound", "Нижняя граница качества сигнала (отношение сигнал/шум)",
                     DoubleValue (10.0),
                     MakeDoubleAccessor (&RoutingProtocol::m_snrBottomBound),
@@ -128,19 +149,15 @@ RoutingProtocol::GetTypeId (void)
 }
 
 void RoutingProtocol::NotifyInterfaceUp (uint32_t interface) {
-  ;
 }
 
 void RoutingProtocol::NotifyInterfaceDown (uint32_t interface) {
-  ;
 }
 
 void RoutingProtocol::NotifyAddAddress (uint32_t interface, Ipv4InterfaceAddress address) {
-  ;
 }
 
 void RoutingProtocol::NotifyRemoveAddress (uint32_t interface, Ipv4InterfaceAddress address) {
-  ;
 }
 
 void RoutingProtocol::SetIpv4 (Ptr<Ipv4> ipv4) {
@@ -159,15 +176,11 @@ void RoutingProtocol::SetIpv4 (Ptr<Ipv4> ipv4) {
                                       /*hops=*/ 1, /*next hop=*/ Ipv4Address::GetLoopback ());
     m_routingTable.AddRoute (rt);
 
-    Simulator::ScheduleNow (&RoutingProtocol::Start, this);
+    m_htimer.SetFunction (&RoutingProtocol::HelloTimerExpire, this);
 }
 
 void RoutingProtocol::PrintRoutingTable (Ptr<OutputStreamWrapper> stream) const {
   ;
-}
-
-void RoutingProtocol::Start() {
-
 }
 
 void RoutingProtocol::Recv(Ptr<Socket> socket) {

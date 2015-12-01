@@ -64,8 +64,14 @@ private:
 
   bool IsMyOwnAddress (Ipv4Address src);
 
+  void HelloTimerExpire();
+
   Ptr<Ipv4> m_ipv4;
   std::map< Ptr<Socket>, Ipv4InterfaceAddress > m_socketAddresses;
+
+  // Hello таймер
+  Timer m_htimer;
+  Time m_helloInterval;
 
   /// Routing table
   RoutingTable m_routingTable;
