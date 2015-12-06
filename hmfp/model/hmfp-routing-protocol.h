@@ -5,9 +5,13 @@
 #include "ns3/ipv4-routing-protocol.h"
 #include "ns3/timer.h"
 #include "hmfp-rtable.h"
+#include "ns3/random-variable-stream.h"
+#include "ns3/pointer.h"
 
 namespace ns3 {
 namespace hmfp {
+
+const int32_t HMFP_PORT = 4444;
 
 class RoutingProtocol : public Ipv4RoutingProtocol {
 public:
@@ -17,6 +21,7 @@ public:
   void SetSnrBottomBound(double value) { this->m_snrBottomBound = value; }
   double GetSnrBottomBound() const { return m_snrBottomBound; }
   void DoDispose ();
+  int64_t AssignStreams (int64_t stream);
 protected:
   virtual void DoInitialize (void);
 private:
@@ -40,14 +45,14 @@ private:
 
   void Recv(Ptr<Socket> socket);
 
-  // Прием запроса на получение сведений о качестве сигнала
-  void RecvRequest(Ptr<Packet> p, Ptr<Ipv4Address> from);
+  // Прием Hello сообщения
+  void RecvHello(Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
 
-  // Прием запроса с получением данных о качестве сигнала до соседа
-  void RecvReply(Ptr<Packet> p, Ptr<Ipv4Address> from);
+  // Информационные сообщения: REQUEST, REPLY, DISCONNECT
+  void RecvInfoMessage(Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
 
-  // Прием уведомления о скором разрыве соединения в виду слабого сигнала
-  void RecvDisconnectNotification();
+  // Поиск нового маршрута до удаляемого узла, пришедшего по Disconnect
+  void RecvNotify(Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
 
 
   // Отправка HELLO сообщения
@@ -66,6 +71,8 @@ private:
 
   void HelloTimerExpire();
 
+  Ptr<Socket> FindSocketWithInterfaceAddress (Ipv4InterfaceAddress addr ) const;
+
   Ptr<Ipv4> m_ipv4;
   std::map< Ptr<Socket>, Ipv4InterfaceAddress > m_socketAddresses;
 
@@ -76,6 +83,9 @@ private:
   /// Routing table
   RoutingTable m_routingTable;
   double m_snrBottomBound;
+
+  /// Provides uniform random variables.
+  Ptr<UniformRandomVariable> m_uniformRandomVariable;
 };
 
 }
