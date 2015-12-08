@@ -382,7 +382,40 @@ void RoutingProtocol::Recv(Ptr<Socket> socket) {
 }
 
 void RoutingProtocol::RecvHello(Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
+    NS_LOG_FUNCTION (this << " src " << from);
+    HelloHeader helloHeader;
+    p->RemoveHeader (helloHeader);
 
+    // Если узел новый, то добавим его в таблицу маршрутизации
+    RoutingTableEntry neighbor;
+    if (!m_routingTable.LookupRoute(from, neighbor)) {
+        Ptr<NetDevice> dev = m_ipv4->GetNetDevice (m_ipv4->GetInterfaceForAddress (to));
+        RoutingTableEntry newEntry (/*device=*/ dev, /*dst=*/ from,
+                                                /*iface=*/ m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (to), 0),
+                                                /*hop=*/ 1, /*nextHop=*/ from);
+        m_routingTable.AddRoute (newEntry);
+    }
+
+
+    NS_LOG_FUNCTION (this << "from " << from);
+    for (std::vector<RoutingInf>::const_iterator it = helloHeader.getRtable().begin(); it != helloHeader.getRtable().end(); ++it) {
+        RoutingTableEntry existPath;
+
+        // Новый маршрут сразу добавим в таблицу маршрутизации, а для существующих проверим количество переходов
+        bool isNotNeedCreateNew = m_routingTable.LookupRoute(it->address, existPath);
+        if (isNotNeedCreateNew && existPath.GetHop() > it->hopCount + 1) {
+            m_routingTable.DeleteRoute(it->address);
+            isNotNeedCreateNew = false;
+        }
+        if (!isNotNeedCreateNew) {
+            Ptr<NetDevice> dev = m_ipv4->GetNetDevice (m_ipv4->GetInterfaceForAddress (it->address));
+            RoutingTableEntry newEntry (/*device=*/ dev, /*dst=*/ it->address,
+                                                    /*iface=*/ m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (it->address), 0),
+                                                    /*hop=*/ it->hopCount + 1, /*nextHop=*/ from);
+            m_routingTable.AddRoute (newEntry);
+        }
+
+    }
 }
 
 void RoutingProtocol::RecvInfoMessage(Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {

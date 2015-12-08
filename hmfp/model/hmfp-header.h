@@ -62,6 +62,14 @@ std::ostream & operator<< (std::ostream & os, TypeHeader const & h);
 //       |     Hop Count |   Reserved    |     Additional Info           |
 //       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
+struct RoutingInf
+{
+    Ipv4Address address;
+    uint8_t hopCount;
+    uint8_t reserved;
+    uint16_t addInfo;
+};
+
 class HelloHeader : public Header
 {
 public:
@@ -74,15 +82,9 @@ public:
     virtual uint32_t GetSerializedSize (void) const;
     virtual void Serialize (Buffer::Iterator start) const;
     virtual uint32_t Deserialize (Buffer::Iterator start);
+    std::vector<RoutingInf> getRtable() { return m_rtable; }
 
 private:
-    struct RoutingInf
-    {
-        Ipv4Address address;
-        uint8_t hopCount;
-        uint8_t reserved;
-        uint16_t addInfo;
-    };
     std::vector<RoutingInf> m_rtable;
     uint8_t m_reserved;
     uint16_t m_rtableSize;
