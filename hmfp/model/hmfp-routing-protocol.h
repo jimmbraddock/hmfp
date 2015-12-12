@@ -25,6 +25,7 @@ public:
 protected:
   virtual void DoInitialize (void);
 private:
+  void SendTo (Ptr<Socket> socket, Ptr<Packet> packet, Ipv4Address destination);
   virtual ~RoutingProtocol ();
   // From Ipv4RoutingProtocol
   Ptr<Ipv4Route> RouteOutput (Ptr<Packet> p, const Ipv4Header &header, Ptr<NetDevice> oif, Socket::SocketErrno &sockerr);

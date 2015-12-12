@@ -83,6 +83,7 @@ public:
     virtual void Serialize (Buffer::Iterator start) const;
     virtual uint32_t Deserialize (Buffer::Iterator start);
     std::vector<RoutingInf> getRtable() { return m_rtable; }
+    void setRtable(std::vector<RoutingInf> rtable) { m_rtable = rtable; m_rtableSize = m_rtable.size(); }
 
 private:
     std::vector<RoutingInf> m_rtable;

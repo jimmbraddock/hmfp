@@ -382,7 +382,7 @@ void RoutingProtocol::Recv(Ptr<Socket> socket) {
 }
 
 void RoutingProtocol::RecvHello(Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
-    NS_LOG_FUNCTION (this << " src " << from);
+    NS_LOG_FUNCTION (this << " from " << from);
     HelloHeader helloHeader;
     p->RemoveHeader (helloHeader);
 
@@ -397,7 +397,6 @@ void RoutingProtocol::RecvHello(Ptr<Packet> p, Ipv4Address to, Ipv4Address from)
     }
 
 
-    NS_LOG_FUNCTION (this << "from " << from);
     for (std::vector<RoutingInf>::const_iterator it = helloHeader.getRtable().begin(); it != helloHeader.getRtable().end(); ++it) {
         RoutingTableEntry existPath;
 
@@ -429,6 +428,48 @@ void RoutingProtocol::RecvNotify(Ptr<Packet> p, Ipv4Address to, Ipv4Address from
 
 
 void RoutingProtocol::SendHello() {
+    NS_LOG_FUNCTION (this);
+
+    std::vector<RoutingInf> routes;
+    for (std::map<Ipv4Address, RoutingTableEntry>::const_iterator it = m_routingTable.GetEntries().begin();
+         it != m_routingTable.GetEntries().end(); ++it) {
+        RoutingInf route;
+        route.address = it->second.GetDestination();
+        route.hopCount = it->second.GetHop();
+        route.addInfo = 0;
+        routes.push_back(route);
+    }
+
+    for (std::map<Ptr<Socket>, Ipv4InterfaceAddress>::const_iterator j = m_socketAddresses.begin (); j != m_socketAddresses.end (); ++j)
+      {
+        Ptr<Socket> socket = j->first;
+        Ipv4InterfaceAddress iface = j->second;
+        HelloHeader helloHeader;
+        helloHeader.setRtable(routes);
+
+        Ptr<Packet> packet = Create<Packet> ();
+        packet->AddHeader (helloHeader);
+        TypeHeader tHeader (HELLO_MESSAGE);
+        packet->AddHeader (tHeader);
+        // Send to all-hosts broadcast if on /32 addr, subnet-directed otherwise
+        Ipv4Address destination;
+        if (iface.GetMask () == Ipv4Mask::GetOnes ())
+          {
+            destination = Ipv4Address ("255.255.255.255");
+          }
+        else
+          {
+            destination = iface.GetBroadcast ();
+          }
+        Time jitter = Time (MilliSeconds (m_uniformRandomVariable->GetInteger (0, 10)));
+        Simulator::Schedule (jitter, &RoutingProtocol::SendTo, this , socket, packet, destination);
+      }
+}
+
+void
+RoutingProtocol::SendTo (Ptr<Socket> socket, Ptr<Packet> packet, Ipv4Address destination)
+{
+    socket->SendTo (packet, 0, InetSocketAddress (destination, HMFP_PORT));
 
 }
 

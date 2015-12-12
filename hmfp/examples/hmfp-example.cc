@@ -226,25 +226,30 @@ AtnSimulate::InstallApplications ()
 //  app.Start (Seconds (2));
 //  app.Stop (Seconds (totalTime) - Seconds (0.001));
 
+    V4PingHelper ping (interfaces.GetAddress (size - 1));
+    ping.SetAttribute ("Verbose", BooleanValue (true));
 
-  Ptr<Node> appSource = NodeList::GetNode (0);
-  Ptr<Node> appSink = NodeList::GetNode (1);
-  // Let's fetch the IP address of the last node, which is on Ipv4Interface 1
-  Ipv4Address remoteAddr = appSink->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ();
+    ApplicationContainer p = ping.Install (nodes.Get (0));
+    p.Start (Seconds (0));
+    p.Stop (Seconds (totalTime) - Seconds (0.001));
+//  Ptr<Node> appSource = NodeList::GetNode (0);
+//  Ptr<Node> appSink = NodeList::GetNode (1);
+//  // Let's fetch the IP address of the last node, which is on Ipv4Interface 1
+//  Ipv4Address remoteAddr = appSink->GetObject<Ipv4> ()->GetAddress (1, 0).GetLocal ();
 
-  OnOffHelper onoff ("ns3::UdpSocketFactory",
-                     Address (InetSocketAddress (remoteAddr, 4567)));
-  onoff.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1.0]"));
-  onoff.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0.0]"));
-  ApplicationContainer app2 = onoff.Install (appSource);
-  app2.Start (Seconds (1));
-  app2.Stop (Seconds (15));
+//  OnOffHelper onoff ("ns3::UdpSocketFactory",
+//                     Address (InetSocketAddress (remoteAddr, 4567)));
+//  onoff.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1.0]"));
+//  onoff.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0.0]"));
+//  ApplicationContainer app2 = onoff.Install (appSource);
+//  app2.Start (Seconds (1));
+//  app2.Stop (Seconds (15));
 
-  // Create a packet sink to receive these packets
-  PacketSinkHelper sink ("ns3::UdpSocketFactory",
-                         InetSocketAddress (Ipv4Address::GetAny (), 4567));
-  ApplicationContainer app3 = sink.Install (appSink);
-  app3.Start (Seconds (3));
-  app3.Stop (Seconds (15));
+//  // Create a packet sink to receive these packets
+//  PacketSinkHelper sink ("ns3::UdpSocketFactory",
+//                         InetSocketAddress (Ipv4Address::GetAny (), 4567));
+//  ApplicationContainer app3 = sink.Install (appSink);
+//  app3.Start (Seconds (3));
+//  app3.Stop (Seconds (15));
 }
 

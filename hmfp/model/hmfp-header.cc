@@ -144,7 +144,7 @@ HelloHeader::GetInstanceTypeId () const
 }
 
 uint32_t HelloHeader::GetSerializedSize (void) const {
-    return 4 + 8 * m_rtableSize;
+    return 3 + 8 * m_rtableSize;
 }
 
 void HelloHeader::Serialize (Buffer::Iterator start) const {
@@ -220,7 +220,7 @@ InfoHeader::GetInstanceTypeId () const
 }
 
 uint32_t InfoHeader::GetSerializedSize (void) const {
-    return 4;
+    return 3;
 }
 
 void InfoHeader::Serialize (Buffer::Iterator start) const {
@@ -274,7 +274,7 @@ NotifyHeader::GetInstanceTypeId () const
 }
 
 uint32_t NotifyHeader::GetSerializedSize (void) const {
-    return 8;
+    return 7;
 }
 
 void NotifyHeader::Serialize (Buffer::Iterator start) const {
