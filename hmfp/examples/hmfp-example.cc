@@ -191,8 +191,8 @@ AtnSimulate::CreateDevices ()
   wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
                                 "DataMode",StringValue (phyMode),
                                 "ControlMode",StringValue (phyMode));
-//  wifiPhy.Set ("TxPowerStart",DoubleValue (7.5));
-//  wifiPhy.Set ("TxPowerEnd", DoubleValue (7.5));
+  wifiPhy.Set ("TxPowerStart",DoubleValue (7.5));
+  wifiPhy.Set ("TxPowerEnd", DoubleValue (7.5));
 
   devices = wifi.Install (wifiPhy, wifiMac, nodes);
 

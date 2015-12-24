@@ -849,7 +849,7 @@ void
 YansWifiPhy::Configure80211a (void)
 {
   NS_LOG_FUNCTION (this);
-  m_channelStartingFrequency = 5e3; //5.000 GHz
+  m_channelStartingFrequency = 120; //5.000 GHz
   SetChannelWidth (20); //20 MHz
 
   m_deviceRateSet.push_back (WifiPhy::GetOfdmRate6Mbps ());
@@ -866,7 +866,7 @@ void
 YansWifiPhy::Configure80211b (void)
 {
   NS_LOG_FUNCTION (this);
-  m_channelStartingFrequency = 2407; //2.407 GHz
+  m_channelStartingFrequency = 120; //2.407 GHz
   SetChannelWidth (22); //22 MHz
 
   m_deviceRateSet.push_back (WifiPhy::GetDsssRate1Mbps ());
@@ -900,7 +900,7 @@ void
 YansWifiPhy::Configure80211_10Mhz (void)
 {
   NS_LOG_FUNCTION (this);
-  m_channelStartingFrequency = 5e3; //5.000 GHz, suppose 802.11a
+  m_channelStartingFrequency = 120; //5.000 GHz, suppose 802.11a
   SetChannelWidth (10); //10 MHz
 
   m_deviceRateSet.push_back (WifiPhy::GetOfdmRate3MbpsBW10MHz ());
@@ -917,7 +917,7 @@ void
 YansWifiPhy::Configure80211_5Mhz (void)
 {
   NS_LOG_FUNCTION (this);
-  m_channelStartingFrequency = 5e3; //5.000 GHz, suppose 802.11a
+  m_channelStartingFrequency = 120; //5.000 GHz, suppose 802.11a
   SetChannelWidth (5); //5 MHz
 
   m_deviceRateSet.push_back (WifiPhy::GetOfdmRate1_5MbpsBW5MHz ());
@@ -934,7 +934,7 @@ void
 YansWifiPhy::ConfigureHolland (void)
 {
   NS_LOG_FUNCTION (this);
-  m_channelStartingFrequency = 5e3; //5.000 GHz
+  m_channelStartingFrequency = 120; //5.000 GHz
   SetChannelWidth (20); //20 MHz
 
   m_deviceRateSet.push_back (WifiPhy::GetOfdmRate6Mbps ());

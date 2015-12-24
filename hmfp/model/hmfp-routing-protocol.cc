@@ -186,11 +186,13 @@ void RoutingProtocol::NotifyInterfaceUp (uint32_t interface) {
     m_socketAddresses.insert (std::make_pair (socket, iface));
 
 
+
     // Add local broadcast record to the routing table
     Ptr<NetDevice> dev = m_ipv4->GetNetDevice (m_ipv4->GetInterfaceForAddress (iface.GetLocal ()));
     RoutingTableEntry rt (/*device=*/ dev, /*dst=*/ iface.GetBroadcast (), /*iface=*/ iface,
                                       /*hops=*/ 1, /*next hop=*/ iface.GetBroadcast ());
     m_routingTable.AddRoute (rt);
+    NS_LOG_DEBUG("Add route " << iface.GetBroadcast ());
 }
 
 void RoutingProtocol::NotifyInterfaceDown (uint32_t interface) {
@@ -257,6 +259,8 @@ void RoutingProtocol::NotifyAddAddress (uint32_t interface, Ipv4InterfaceAddress
             RoutingTableEntry rt (/*device=*/ dev, /*dst=*/ iface.GetBroadcast (), /*iface=*/ iface, /*hops=*/ 1,
                                               /*next hop=*/ iface.GetBroadcast ());
             m_routingTable.AddRoute (rt);
+
+            NS_LOG_DEBUG("Add route " << iface.GetBroadcast ());
           }
       }
     else
@@ -295,6 +299,8 @@ void RoutingProtocol::NotifyRemoveAddress (uint32_t interface, Ipv4InterfaceAddr
             RoutingTableEntry rt (/*device=*/ dev, /*dst=*/ iface.GetBroadcast (), /*iface=*/ iface,
                                               /*hops=*/ 1, /*next hop=*/ iface.GetBroadcast ());
             m_routingTable.AddRoute (rt);
+
+            NS_LOG_DEBUG("Add route " << iface.GetBroadcast ());
           }
         if (m_socketAddresses.empty ())
           {
@@ -326,6 +332,8 @@ void RoutingProtocol::SetIpv4 (Ptr<Ipv4> ipv4) {
                                       /*iface=*/ Ipv4InterfaceAddress (Ipv4Address::GetLoopback (), Ipv4Mask ("255.0.0.0")),
                                       /*hops=*/ 1, /*next hop=*/ Ipv4Address::GetLoopback ());
     m_routingTable.AddRoute (rt);
+
+    NS_LOG_DEBUG("Add route " << Ipv4Address::GetLoopback ());
 
     m_htimer.SetFunction (&RoutingProtocol::HelloTimerExpire, this);
 }
@@ -382,7 +390,7 @@ void RoutingProtocol::Recv(Ptr<Socket> socket) {
 }
 
 void RoutingProtocol::RecvHello(Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
-    NS_LOG_FUNCTION (this << " from " << from);
+    NS_LOG_FUNCTION (this << " from " << from << "to " << to);
     HelloHeader helloHeader;
     p->RemoveHeader (helloHeader);
 
@@ -398,8 +406,9 @@ void RoutingProtocol::RecvHello(Ptr<Packet> p, Ipv4Address to, Ipv4Address from)
 
 
     for (std::vector<RoutingInf>::const_iterator it = helloHeader.getRtable().begin(); it != helloHeader.getRtable().end(); ++it) {
-        RoutingTableEntry existPath;
 
+        RoutingTableEntry existPath;
+        NS_LOG_DEBUG("Route to " << it->address);
         // Новый маршрут сразу добавим в таблицу маршрутизации, а для существующих проверим количество переходов
         bool isNotNeedCreateNew = m_routingTable.LookupRoute(it->address, existPath);
         if (isNotNeedCreateNew && existPath.GetHop() > it->hopCount + 1) {
@@ -407,9 +416,9 @@ void RoutingProtocol::RecvHello(Ptr<Packet> p, Ipv4Address to, Ipv4Address from)
             isNotNeedCreateNew = false;
         }
         if (!isNotNeedCreateNew) {
-            Ptr<NetDevice> dev = m_ipv4->GetNetDevice (m_ipv4->GetInterfaceForAddress (it->address));
+            Ptr<NetDevice> dev = m_ipv4->GetNetDevice (m_ipv4->GetInterfaceForAddress (to));
             RoutingTableEntry newEntry (/*device=*/ dev, /*dst=*/ it->address,
-                                                    /*iface=*/ m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (it->address), 0),
+                                                    /*iface=*/ m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (to), 0),
                                                     /*hop=*/ it->hopCount + 1, /*nextHop=*/ from);
             m_routingTable.AddRoute (newEntry);
         }
@@ -433,6 +442,8 @@ void RoutingProtocol::SendHello() {
     std::vector<RoutingInf> routes;
     for (std::map<Ipv4Address, RoutingTableEntry>::const_iterator it = m_routingTable.GetEntries().begin();
          it != m_routingTable.GetEntries().end(); ++it) {
+        if (it->first == Ipv4Address::GetLoopback() || it->first.IsBroadcast())
+            continue;
         RoutingInf route;
         route.address = it->second.GetDestination();
         route.hopCount = it->second.GetHop();
