@@ -192,7 +192,7 @@ void RoutingProtocol::NotifyInterfaceUp (uint32_t interface) {
     RoutingTableEntry rt (/*device=*/ dev, /*dst=*/ iface.GetBroadcast (), /*iface=*/ iface,
                                       /*hops=*/ 1, /*next hop=*/ iface.GetBroadcast ());
     m_routingTable.AddRoute (rt);
-    NS_LOG_DEBUG("Add route " << iface.GetBroadcast ());
+    NS_LOG_DEBUG("Add route " << rt.GetDestination());
 }
 
 void RoutingProtocol::NotifyInterfaceDown (uint32_t interface) {
@@ -375,10 +375,18 @@ void RoutingProtocol::Recv(Ptr<Socket> socket) {
         break;
     }
     case REQUEST_MESSAGE:
+    {
+        RecvRequestMessage(packet, receiver, sender);
+        break;
+    }
     case REPLY_MESSAGE:
+    {
+        RecvReplyMessage(packet, receiver, sender);
+        break;
+    }
     case DISCONNECT_MESSAGE:
     {
-        RecvInfoMessage(packet, receiver, sender);
+        RecvDisconnectMessage(packet, receiver, sender);
         break;
     }
     case NOTIFY_MESSAGE:
@@ -397,11 +405,23 @@ void RoutingProtocol::RecvHello(Ptr<Packet> p, Ipv4Address to, Ipv4Address from)
     // Если узел новый, то добавим его в таблицу маршрутизации
     RoutingTableEntry neighbor;
     if (!m_routingTable.LookupRoute(from, neighbor)) {
+        NS_LOG_DEBUG("Add new neighbour " << from);
         Ptr<NetDevice> dev = m_ipv4->GetNetDevice (m_ipv4->GetInterfaceForAddress (to));
         RoutingTableEntry newEntry (/*device=*/ dev, /*dst=*/ from,
                                                 /*iface=*/ m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (to), 0),
                                                 /*hop=*/ 1, /*nextHop=*/ from);
         m_routingTable.AddRoute (newEntry);
+
+        Ptr<Socket> socket = Socket::CreateSocket (GetObject<Node> (),
+                                                   UdpSocketFactory::GetTypeId ());
+        NS_ASSERT (socket != 0);
+        socket->SetRecvCallback (MakeCallback (&RoutingProtocol::Recv, this));
+        // Bind to any IP address so that broadcasts can be received
+        socket->Bind (InetSocketAddress (from, HMFP_PORT));
+        socket->BindToNetDevice (dev);
+        socket->SetAllowBroadcast (true);
+        socket->SetAttribute ("IpTtl", UintegerValue (1));
+        m_socketAddresses.insert(std::make_pair(socket, newEntry.GetInterface()));
     }
 
 
@@ -421,13 +441,33 @@ void RoutingProtocol::RecvHello(Ptr<Packet> p, Ipv4Address to, Ipv4Address from)
                                                     /*iface=*/ m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (to), 0),
                                                     /*hop=*/ it->hopCount + 1, /*nextHop=*/ from);
             m_routingTable.AddRoute (newEntry);
+            // Сразу начнем отслеживать нового соседа, вдруг он скоро исчезнет
+            Simulator::Schedule (MilliSeconds(250), &RoutingProtocol::SendRequest, this ,
+                                 FindSocketWithInterfaceAddress(newEntry.GetInterface()), from);
         }
 
     }
 }
 
-void RoutingProtocol::RecvInfoMessage(Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
+void RoutingProtocol::RecvRequestMessage(Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
 
+
+        Simulator::Schedule (Seconds(0), &RoutingProtocol::SendReply, this ,FindSocketWithInterfaceAddress(
+                             m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (from), 0)), to);
+}
+
+void RoutingProtocol::RecvReplyMessage(Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
+
+
+        Simulator::Schedule (Seconds(0), &RoutingProtocol::SendRequest, this ,FindSocketWithInterfaceAddress(
+                             m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (from), 0)), to);
+}
+
+void RoutingProtocol::RecvDisconnectMessage(Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
+
+
+        Simulator::Schedule (Seconds(0), &RoutingProtocol::SendRequest, this ,FindSocketWithInterfaceAddress(
+                             m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (from), 0)), to);
 }
 
 void RoutingProtocol::RecvNotify(Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
@@ -447,7 +487,6 @@ void RoutingProtocol::SendHello() {
         RoutingInf route;
         route.address = it->second.GetDestination();
         route.hopCount = it->second.GetHop();
-        route.addInfo = 0;
         routes.push_back(route);
     }
 
@@ -484,16 +523,39 @@ RoutingProtocol::SendTo (Ptr<Socket> socket, Ptr<Packet> packet, Ipv4Address des
 
 }
 
-void RoutingProtocol::SendRequest() {
+void RoutingProtocol::SendRequest(Ptr<Socket> socket, Ipv4Address destination) {
+    NS_LOG_FUNCTION(this << " to " << destination);
+
+    InfoHeader header;
+    Ptr<Packet> packet = Create<Packet> ();
+    packet->AddHeader (header);
+    TypeHeader tHeader (REQUEST_MESSAGE);
+    packet->AddHeader (tHeader);
+
+    Simulator::Schedule (Seconds(0), &RoutingProtocol::SendTo, this , socket, packet, destination);
 
 }
 
-void RoutingProtocol::SendReply() {
+void RoutingProtocol::SendReply(Ptr<Socket> socket, Ipv4Address destination) {
+    NS_LOG_FUNCTION(this << " to " << destination);
 
+    InfoHeader header;
+    Ptr<Packet> packet = Create<Packet> ();
+    packet->AddHeader (header);
+    TypeHeader tHeader (REPLY_MESSAGE);
+    packet->AddHeader (tHeader);
+    Simulator::Schedule (Seconds(0), &RoutingProtocol::SendTo, this , socket, packet, destination);
 }
 
-void RoutingProtocol::SendDisconnectNotification() {
+void RoutingProtocol::SendDisconnectNotification(Ptr<Socket> socket, Ipv4Address destination) {
+    NS_LOG_FUNCTION(this << " to " << destination);
 
+    InfoHeader header;
+    Ptr<Packet> packet = Create<Packet> ();
+    packet->AddHeader (header);
+    TypeHeader tHeader (DISCONNECT_MESSAGE);
+    packet->AddHeader (tHeader);
+    Simulator::Schedule (Seconds(0), &RoutingProtocol::SendTo, this , socket, packet, destination);
 }
 
 int64_t

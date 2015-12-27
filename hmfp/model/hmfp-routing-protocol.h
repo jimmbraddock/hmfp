@@ -49,8 +49,14 @@ private:
   // Прием Hello сообщения
   void RecvHello(Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
 
-  // Информационные сообщения: REQUEST, REPLY, DISCONNECT
-  void RecvInfoMessage(Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
+  // Прием REQUEST сообщения
+  void RecvRequestMessage(Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
+
+  // Прием REPLY сообщения
+  void RecvReplyMessage(Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
+
+  // Прием DISCONNECT сообщения
+  void RecvDisconnectMessage(Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
 
   // Поиск нового маршрута до удаляемого узла, пришедшего по Disconnect
   void RecvNotify(Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
@@ -60,13 +66,13 @@ private:
   void SendHello();
 
   // Отправка запроса на получение сведений о качестве сигнала
-  void SendRequest();
+  void SendRequest(Ptr<Socket> socket, Ipv4Address destination);
 
   // Отправка ответа для получения качества сигнала на приемнике
-  void SendReply();
+  void SendReply(Ptr<Socket> socket, Ipv4Address destination);
 
   // Отправка уведомления о скором разрыве соединения
-  void SendDisconnectNotification();
+  void SendDisconnectNotification(Ptr<Socket> socket, Ipv4Address destination);
 
   bool IsMyOwnAddress (Ipv4Address src);
 
