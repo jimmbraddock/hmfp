@@ -38,6 +38,7 @@
 #include "ns3/trace-source-accessor.h"
 #include "ns3/boolean.h"
 #include "ns3/node.h"
+#include "ns3/snr-tag.h"
 #include "ampdu-tag.h"
 #include <cmath>
 
@@ -1166,6 +1167,12 @@ YansWifiPhy::EndReceive (Ptr<Packet> packet, enum WifiPreamble preamble, struct 
           signalNoise.signal = RatioToDb (event->GetRxPowerW ()) + 30;
           signalNoise.noise = RatioToDb (event->GetRxPowerW () / snrPer.snr) - GetRxNoiseFigure () + 30;
           NotifyMonitorSniffRx (packet, (uint16_t)GetChannelFrequencyMhz (), GetChannelNumber (), dataRate500KbpsUnits, event->GetPreambleType (), event->GetTxVector (), aMpdu, signalNoise);
+          // **********  SNR TAG  *********** //
+          SnrTag tag;
+          tag.Set(signalNoise.signal - signalNoise.noise);
+          if (! packet->PeekPacketTag (tag))
+              packet->AddPacketTag (tag);
+          // *********  SNR TAG  *********** //
           m_state->SwitchFromRxEndOk (packet, snrPer.snr, event->GetTxVector (), event->GetPreambleType ());
         }
       else

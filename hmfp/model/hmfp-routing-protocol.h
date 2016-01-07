@@ -47,19 +47,19 @@ private:
   void Recv(Ptr<Socket> socket);
 
   // Прием Hello сообщения
-  void RecvHello(Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
+  void RecvHello(Ptr<Socket> socket, Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
 
   // Прием REQUEST сообщения
-  void RecvRequestMessage(Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
+  void RecvRequestMessage(Ptr<Socket> socket, Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
 
   // Прием REPLY сообщения
-  void RecvReplyMessage(Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
+  void RecvReplyMessage(Ptr<Socket> socket, Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
 
   // Прием DISCONNECT сообщения
-  void RecvDisconnectMessage(Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
+  void RecvDisconnectMessage(Ptr<Socket> socket, Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
 
   // Поиск нового маршрута до удаляемого узла, пришедшего по Disconnect
-  void RecvNotify(Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
+  void RecvNotify(Ptr<Socket> socket, Ptr<Packet> p, Ipv4Address to, Ipv4Address from);
 
 
   // Отправка HELLO сообщения

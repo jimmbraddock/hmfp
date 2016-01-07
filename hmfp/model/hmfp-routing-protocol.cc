@@ -9,6 +9,7 @@
 #include "ns3/adhoc-wifi-mac.h"
 #include "ns3/udp-socket-factory.h"
 #include "ns3/string.h"
+#include "ns3/snr-tag.h"
 #include "hmfp-header.h"
 
 
@@ -371,33 +372,33 @@ void RoutingProtocol::Recv(Ptr<Socket> socket) {
     {
     case HELLO_MESSAGE:
     {
-        RecvHello (packet, receiver, sender);
+        RecvHello (socket, packet, receiver, sender);
         break;
     }
     case REQUEST_MESSAGE:
     {
-        RecvRequestMessage(packet, receiver, sender);
+        RecvRequestMessage(socket, packet, receiver, sender);
         break;
     }
     case REPLY_MESSAGE:
     {
-        RecvReplyMessage(packet, receiver, sender);
+        RecvReplyMessage(socket, packet, receiver, sender);
         break;
     }
     case DISCONNECT_MESSAGE:
     {
-        RecvDisconnectMessage(packet, receiver, sender);
+        RecvDisconnectMessage(socket, packet, receiver, sender);
         break;
     }
     case NOTIFY_MESSAGE:
     {
-        RecvNotify (packet, receiver, sender);
+        RecvNotify (socket, packet, receiver, sender);
         break;
     }
     }
 }
 
-void RoutingProtocol::RecvHello(Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
+void RoutingProtocol::RecvHello(Ptr<Socket> socket, Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
     NS_LOG_FUNCTION (this << " from " << from << "to " << to);
     HelloHeader helloHeader;
     p->RemoveHeader (helloHeader);
@@ -443,35 +444,39 @@ void RoutingProtocol::RecvHello(Ptr<Packet> p, Ipv4Address to, Ipv4Address from)
             m_routingTable.AddRoute (newEntry);
             // Сразу начнем отслеживать нового соседа, вдруг он скоро исчезнет
             Simulator::Schedule (MilliSeconds(250), &RoutingProtocol::SendRequest, this ,
-                                 FindSocketWithInterfaceAddress(newEntry.GetInterface()), from);
+                                 socket, from);
         }
 
     }
 }
 
-void RoutingProtocol::RecvRequestMessage(Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
+void RoutingProtocol::RecvRequestMessage(Ptr<Socket> socket, Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
+    NS_LOG_FUNCTION(this << from << to);
 
 
-        Simulator::Schedule (Seconds(0), &RoutingProtocol::SendReply, this ,FindSocketWithInterfaceAddress(
-                             m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (from), 0)), to);
+    Simulator::Schedule (Seconds(0), &RoutingProtocol::SendReply, this ,
+                         socket, from);
 }
 
-void RoutingProtocol::RecvReplyMessage(Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
+void RoutingProtocol::RecvReplyMessage(Ptr<Socket> socket, Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
+    NS_LOG_FUNCTION(this << "Receive reply from " << from << " to " << to);
 
-
-        Simulator::Schedule (Seconds(0), &RoutingProtocol::SendRequest, this ,FindSocketWithInterfaceAddress(
-                             m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (from), 0)), to);
+    SnrTag tag;
+    if (p->PeekPacketTag(tag))
+        NS_LOG_DEBUG("SNR: " << tag.Get());
+    else
+        NS_LOG_DEBUG("WARNING SNR!!!!!!");
+    Simulator::Schedule (Seconds(0), &RoutingProtocol::SendRequest, this ,socket, from);
 }
 
-void RoutingProtocol::RecvDisconnectMessage(Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
+void RoutingProtocol::RecvDisconnectMessage(Ptr<Socket> socket, Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
+    NS_LOG_FUNCTION(this << "Receive disconnect from " << from << " to " << to);
 
-
-        Simulator::Schedule (Seconds(0), &RoutingProtocol::SendRequest, this ,FindSocketWithInterfaceAddress(
-                             m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (from), 0)), to);
+    Simulator::Schedule (Seconds(0), &RoutingProtocol::SendRequest, this ,socket, from);
 }
 
-void RoutingProtocol::RecvNotify(Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
-
+void RoutingProtocol::RecvNotify(Ptr<Socket> socket, Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
+    NS_LOG_FUNCTION(this << "Receive notify from " << from << " to " << to);
 }
 
 
