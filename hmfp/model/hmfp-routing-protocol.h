@@ -7,6 +7,7 @@
 #include "hmfp-rtable.h"
 #include "ns3/random-variable-stream.h"
 #include "ns3/pointer.h"
+#include "hmfp-header.h"
 
 namespace ns3 {
 namespace hmfp {
@@ -65,20 +66,22 @@ private:
   // Отправка HELLO сообщения
   void SendHello();
 
-  // Отправка запроса на получение сведений о качестве сигнала
-  void SendRequest(Ptr<Socket> socket, Ipv4Address destination);
-
-  // Отправка ответа для получения качества сигнала на приемнике
-  void SendReply(Ptr<Socket> socket, Ipv4Address destination);
+  // Отправка запроса или ответа на запрос для получения сведений о качестве сигнала
+  void SendEcho(Ptr<Socket> socket, Ipv4Address destination, MessageType type);
 
   // Отправка уведомления о скором разрыве соединения
   void SendDisconnectNotification(Ptr<Socket> socket, Ipv4Address destination);
+
+  // Отправка уведомления !!соседям!!, что достигнуть отключающегося соседа problemNeighbour через отправляющий узел
+  // не получится
+  void SendNotify(Ipv4Address problemNeighbour);
 
   bool IsMyOwnAddress (Ipv4Address src);
 
   void HelloTimerExpire();
 
   Ptr<Socket> FindSocketWithInterfaceAddress (Ipv4InterfaceAddress addr ) const;
+  Ptr<Socket> FindSocketByAddress (const Ipv4Address address ) const;
 
   Ptr<Ipv4> m_ipv4;
   std::map< Ptr<Socket>, Ipv4InterfaceAddress > m_socketAddresses;

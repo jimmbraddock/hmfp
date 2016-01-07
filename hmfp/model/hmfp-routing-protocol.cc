@@ -10,7 +10,6 @@
 #include "ns3/udp-socket-factory.h"
 #include "ns3/string.h"
 #include "ns3/snr-tag.h"
-#include "hmfp-header.h"
 
 
 namespace ns3 {
@@ -231,6 +230,20 @@ RoutingProtocol::FindSocketWithInterfaceAddress (Ipv4InterfaceAddress addr ) con
   return socket;
 }
 
+Ptr<Socket> RoutingProtocol::FindSocketByAddress (const Ipv4Address address ) const {
+    NS_LOG_FUNCTION (this << address);
+    for (std::map<Ptr<Socket>, Ipv4InterfaceAddress>::const_iterator j =
+           m_socketAddresses.begin (); j != m_socketAddresses.end (); ++j)
+      {
+        Ptr<Socket> socket = j->first;
+        Ipv4InterfaceAddress iface = j->second;
+        if (iface.GetLocal() == address)
+          return socket;
+      }
+    Ptr<Socket> socket;
+    return socket;
+}
+
 void RoutingProtocol::NotifyAddAddress (uint32_t interface, Ipv4InterfaceAddress address) {
     NS_LOG_FUNCTION (this << " interface " << interface << " address " << address);
     Ptr<Ipv4L3Protocol> l3 = m_ipv4->GetObject<Ipv4L3Protocol> ();
@@ -443,8 +456,8 @@ void RoutingProtocol::RecvHello(Ptr<Socket> socket, Ptr<Packet> p, Ipv4Address t
                                                     /*hop=*/ it->hopCount + 1, /*nextHop=*/ from);
             m_routingTable.AddRoute (newEntry);
             // Сразу начнем отслеживать нового соседа, вдруг он скоро исчезнет
-            Simulator::Schedule (MilliSeconds(250), &RoutingProtocol::SendRequest, this ,
-                                 socket, from);
+            Simulator::Schedule (MilliSeconds(250), &RoutingProtocol::SendEcho, this ,
+                                 socket, from, REQUEST_MESSAGE);
         }
 
     }
@@ -454,8 +467,8 @@ void RoutingProtocol::RecvRequestMessage(Ptr<Socket> socket, Ptr<Packet> p, Ipv4
     NS_LOG_FUNCTION(this << from << to);
 
 
-    Simulator::Schedule (Seconds(0), &RoutingProtocol::SendReply, this ,
-                         socket, from);
+    Simulator::Schedule (Seconds(0), &RoutingProtocol::SendEcho, this ,
+                         socket, from, REPLY_MESSAGE);
 }
 
 void RoutingProtocol::RecvReplyMessage(Ptr<Socket> socket, Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
@@ -466,13 +479,13 @@ void RoutingProtocol::RecvReplyMessage(Ptr<Socket> socket, Ptr<Packet> p, Ipv4Ad
         NS_LOG_DEBUG("SNR: " << tag.Get());
     else
         NS_LOG_DEBUG("WARNING SNR!!!!!!");
-    Simulator::Schedule (Seconds(0), &RoutingProtocol::SendRequest, this ,socket, from);
+    Simulator::Schedule (Seconds(0), &RoutingProtocol::SendEcho, this ,socket, from, REQUEST_MESSAGE);
 }
 
 void RoutingProtocol::RecvDisconnectMessage(Ptr<Socket> socket, Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
     NS_LOG_FUNCTION(this << "Receive disconnect from " << from << " to " << to);
 
-    Simulator::Schedule (Seconds(0), &RoutingProtocol::SendRequest, this ,socket, from);
+    Simulator::Schedule (Seconds(0), &RoutingProtocol::SendDisconnectNotification, this ,socket, from);
 }
 
 void RoutingProtocol::RecvNotify(Ptr<Socket> socket, Ptr<Packet> p, Ipv4Address to, Ipv4Address from) {
@@ -528,26 +541,13 @@ RoutingProtocol::SendTo (Ptr<Socket> socket, Ptr<Packet> packet, Ipv4Address des
 
 }
 
-void RoutingProtocol::SendRequest(Ptr<Socket> socket, Ipv4Address destination) {
+void RoutingProtocol::SendEcho(Ptr<Socket> socket, Ipv4Address destination, MessageType type) {
     NS_LOG_FUNCTION(this << " to " << destination);
 
     InfoHeader header;
     Ptr<Packet> packet = Create<Packet> ();
     packet->AddHeader (header);
-    TypeHeader tHeader (REQUEST_MESSAGE);
-    packet->AddHeader (tHeader);
-
-    Simulator::Schedule (Seconds(0), &RoutingProtocol::SendTo, this , socket, packet, destination);
-
-}
-
-void RoutingProtocol::SendReply(Ptr<Socket> socket, Ipv4Address destination) {
-    NS_LOG_FUNCTION(this << " to " << destination);
-
-    InfoHeader header;
-    Ptr<Packet> packet = Create<Packet> ();
-    packet->AddHeader (header);
-    TypeHeader tHeader (REPLY_MESSAGE);
+    TypeHeader tHeader (type);
     packet->AddHeader (tHeader);
     Simulator::Schedule (Seconds(0), &RoutingProtocol::SendTo, this , socket, packet, destination);
 }
@@ -561,6 +561,26 @@ void RoutingProtocol::SendDisconnectNotification(Ptr<Socket> socket, Ipv4Address
     TypeHeader tHeader (DISCONNECT_MESSAGE);
     packet->AddHeader (tHeader);
     Simulator::Schedule (Seconds(0), &RoutingProtocol::SendTo, this , socket, packet, destination);
+}
+
+void RoutingProtocol::SendNotify(Ipv4Address problemNeighbour) {
+    NS_LOG_FUNCTION(this << "problemHost" << problemNeighbour);
+
+    // Рассылаем всем соседям уведомление с потерянным узлом
+    for (std::map<Ipv4Address, RoutingTableEntry>::iterator it = m_routingTable.GetEntries().begin(); it != m_routingTable.GetEntries().end();
+         ++it) {
+
+        if (it->first == problemNeighbour || it->second.GetHop() != 1)
+            continue;
+
+        NotifyHeader header;
+        header.SetDisconnectAddress(problemNeighbour);
+        Ptr<Packet> packet = Create<Packet> ();
+        packet->AddHeader (header);
+        TypeHeader tHeader (NOTIFY_MESSAGE);
+        packet->AddHeader (tHeader);
+        Simulator::Schedule (Seconds(0), &RoutingProtocol::SendTo, this , FindSocketByAddress(it->first), packet, it->first);
+    }
 }
 
 int64_t

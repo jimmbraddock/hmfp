@@ -146,6 +146,7 @@ public:
     virtual void Serialize (Buffer::Iterator start) const;
     virtual uint32_t Deserialize (Buffer::Iterator start);
 
+    void SetDisconnectAddress (Ipv4Address address) { this->m_disconnectAddress = address; };
 
 private:
     uint8_t m_reserved;
